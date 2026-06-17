@@ -172,17 +172,18 @@
     window.scrollTo(0, 0);
   }
 
-  async function apiGet(params) {
-    const url = API + "?" + new URLSearchParams(params);
-    const r = await fetch(url, { redirect: "follow" });
-    return r.json();
-  }
+function apiGet(params) {
+  var url = API + "?" + Object.keys(params).map(function(k) {
+    return k + "=" + encodeURIComponent(params[k]);
+  }).join("&");
+  return fetch(url).then(function(r) { return r.json(); });
+}
 
- async function apiPost(dados) {
-  const params = { ...dados };
-  const url = API + "?" + new URLSearchParams(params);
-  const r = await fetch(url, { redirect: "follow" });
-  return r.json();
+function apiPost(dados) {
+  return fetch(API, {
+    method: "POST",
+    body: JSON.stringify(dados)
+  }).then(function(r) { return r.json(); });
 }
 
   // Carrega datas
