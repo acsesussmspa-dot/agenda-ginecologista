@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda — Dra. Júlia Felix</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 14px; color: #222;
+         background: #f0f4fb; min-height: 100vh; }
+
+  .header {
+    background: #1564C0; color: #fff;
+    padding: 16px; border-bottom: 3px solid #3A9FFB;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header h1 { font-size: 17px; margin-bottom: 2px; }
+  .header p  { font-size: 12px; opacity: .85; }
+
+  .tela { padding: 14px; display: none; }
+  .tela.ativa { display: block; }
+
+  .section-label {
+    font-size: 11px; font-weight: bold; color: #888;
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 10px;
+  }
+
+  .aba-btn {
+    display: block; width: 100%; padding: 12px 14px;
+    margin-bottom: 8px; background: #fff;
+    border: 1px solid #dde3ee; border-radius: 8px;
+    font-size: 14px; font-weight: bold; color: #1564C0;
+    cursor: pointer; text-align: left;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .aba-btn:active { background: #e8f0fe; }
+
+  .slot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px; margin-bottom: 8px; border-radius: 8px;
+    border: 1px solid #dde3ee; background: #fff; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .slot:active { background: #f0f6ff; }
+  .slot.ocupado { background: #D6E4F7; border-color: #3A9FFB; }
+  .slot-left { display: flex; flex-direction: column; gap: 2px; }
+  .slot-hora { font-weight: bold; font-size: 15px; color: #1564C0; }
+  .slot-nome { font-size: 12px; color: #555; }
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: bold; }
+  .badge.livre   { background: #e0f0e0; color: #2d6a2d; }
+  .badge.ocupado { background: #3A9FFB; color: #fff; }
+
+  .form-title {
+    font-size: 14px; font-weight: bold; color: #1564C0;
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 2px solid #e0e8f4;
+  }
+  .field { margin-bottom: 12px; }
+  label { display: block; font-size: 12px; font-weight: bold;
+          color: #555; margin-bottom: 4px; }
+  .req { color: #C0392B; }
+  select, input, textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid #BFC9D4; border-radius: 6px;
+    font-size: 14px; background: #fff;
+    -webkit-appearance: none;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: #1564C0;
+    box-shadow: 0 0 0 2px rgba(21,100,192,.15);
+  }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; padding: 13px 4px; border: none; border-radius: 7px;
+    font-size: 14px; font-weight: bold; cursor: pointer;
+  }
+  .btn-save  { background: #1564C0; color: #fff; }
+  .btn-save:active { background: #0d4fa3; }
+  .btn-clear { background: #e0e0e0; color: #444; }
+
+  .btn-back {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 0; border: none; background: none;
+    color: #1564C0; font-size: 14px; font-weight: bold;
+    cursor: pointer; margin-bottom: 14px;
+  }
+
+  .msg { margin-top: 12px; padding: 10px 14px; border-radius: 6px;
+         font-size: 13px; display: none; }
+  .msg.ok  { background: #d4edda; color: #155724; }
+  .msg.err { background: #f8d7da; color: #721c24; }
+
+  .loading { text-align: center; padding: 30px 20px; color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📅 Dra. Júlia Felix</h1>
+  <p>Ginecologista · Terças-Feiras</p>
+</div>
+
+<!-- Tela 1: datas -->
+<div id="telaAbas" class="tela ativa" style="padding-top:16px">
+  <div class="section-label">Selecione a data</div>
+  <div id="listaAbas"><div class="loading">⏳ Carregando datas...</div></div>
+</div>
+
+<!-- Tela 2: horários -->
+<div id="telaHorarios" class="tela">
+  <button class="btn-back" onclick="voltarAbas()">← Voltar</button>
+  <div id="tituloData" class="section-label"></div>
+  <div id="listaHorarios"><div class="loading">⏳ Carregando...</div></div>
+</div>
+
+<!-- Tela 3: formulário -->
+<div id="telaForm" class="tela">
+  <button class="btn-back" onclick="voltarHorarios()">← Voltar</button>
+  <div class="form-title" id="formTitle"></div>
+
+  <div class="field">
+    <label>Equipe (ESF/EAP) <span class="req">*</span></label>
+    <select id="equipe">
+      <option value="">— selecione —</option>
+      <option>ESF</option>
+      <option>EAP</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Microárea <span class="req">*</span></label>
+    <input id="microarea" type="text" placeholder="Ex: 01, 02A...">
+  </div>
+  <div class="field">
+    <label>CPF <span class="req">*</span></label>
+    <input id="famRua" type="text" placeholder="000.000.000-00" inputmode="numeric">
+  </div>
+  <div class="field">
+    <label>Cartão Municipal <span class="req">*</span></label>
+    <input id="cartao" type="text" placeholder="Nº do cartão" inputmode="numeric">
+  </div>
+  <div class="field">
+    <label>Nome <span class="req">*</span></label>
+    <input id="nome" type="text" placeholder="Nome completo" autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Motivo <span class="req">*</span></label>
+    <textarea id="motivo" placeholder="Consulta de rotina, pré-natal..."></textarea>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-save"  onclick="salvar()">💾 Salvar</button>
+    <button class="btn btn-clear" onclick="limpar()">🗑️ Limpar</button>
+  </div>
+  <div id="msg" class="msg"></div>
+</div>
+
+<script>
+  const API = "https://script.google.com/macros/s/AKfycbwdFRz99rCHnP6PWPIeUgpN0sNGeONC2woGIJxPX9Fkd5NTaBK6es4KDGLWWDaYEYGXwg/exec";
+
+  let abaAtual = null;
+  let rowAtual = null;
+  let horariosCache = [];
+
+  function mostrar(id) {
+    ["telaAbas","telaHorarios","telaForm"].forEach(t =>
+      document.getElementById(t).classList.remove("ativa")
+    );
+    document.getElementById(id).classList.add("ativa");
+    window.scrollTo(0, 0);
+  }
+
+  async function apiGet(params) {
+    const url = API + "?" + new URLSearchParams(params);
+    const r = await fetch(url, { redirect: "follow" });
+    return r.json();
+  }
+
+  async function apiPost(dados) {
+    const r = await fetch(API, {
+      method: "POST",
+      body: JSON.stringify(dados),
+      redirect: "follow"
+    });
+    return r.json();
+  }
+
+  // Carrega datas
+  async function carregarAbas() {
+    try {
+      const r = await apiGet({ acao: "getAbas" });
+      const el = document.getElementById("listaAbas");
+      if (!r.abas || !r.abas.length) {
+        el.innerHTML = '<div class="loading">Nenhuma data encontrada.<br>Crie as abas pelo menu 📅 Agenda.</div>';
+        return;
+      }
+      el.innerHTML = r.abas.map(a =>
+        `<button class="aba-btn" onclick="abrirAba('${a}')">📅 ${a}</button>`
+      ).join("");
+    } catch(e) {
+      document.getElementById("listaAbas").innerHTML =
+        `<div class="loading" style="color:red">Erro ao carregar: ${e.message}</div>`;
+    }
+  }
+
+  async function abrirAba(nome) {
+    abaAtual = nome;
+    document.getElementById("tituloData").textContent = "📅 " + nome;
+    document.getElementById("listaHorarios").innerHTML = '<div class="loading">⏳ Carregando...</div>';
+    mostrar("telaHorarios");
+
+    try {
+      const r = await apiGet({ acao: "getHorarios", nomeAba: nome });
+      if (r.erro) {
+        document.getElementById("listaHorarios").innerHTML =
+          `<div class="loading" style="color:red">${r.erro}</div>`;
+        return;
+      }
+      horariosCache = r.horarios;
+      renderHorarios();
+    } catch(e) {
+      document.getElementById("listaHorarios").innerHTML =
+        `<div class="loading" style="color:red">Erro: ${e.message}</div>`;
+    }
+  }
+
+  function renderHorarios() {
+    document.getElementById("listaHorarios").innerHTML = horariosCache.map(h => {
+      const cls   = h.ocupado ? "slot ocupado" : "slot";
+      const badge = h.ocupado
+        ? '<span class="badge ocupado">OCUPADO</span>'
+        : '<span class="badge livre">LIVRE</span>';
+      const sub = h.ocupado
+        ? `<span class="slot-nome">${h.nome}</span>`
+        : `<span class="slot-nome" style="color:#bbb">Disponível</span>`;
+      return `<div class="${cls}" onclick="abrirForm(${h.row})">
+                <div class="slot-left">
+                  <span class="slot-hora">🕐 ${h.horario}</span>
+                  ${sub}
+                </div>
+                ${badge}
+              </div>`;
+    }).join("");
+  }
+
+  function abrirForm(row) {
+    const h = horariosCache.find(x => x.row === row);
+    if (!h) return;
+    rowAtual = row;
+
+    document.getElementById("formTitle").textContent = `🕐 ${h.horario} — ${abaAtual}`;
+    document.getElementById("equipe").value    = h.equipe    || "";
+    document.getElementById("microarea").value = h.microarea || "";
+    document.getElementById("famRua").value    = h.famRua    || "";
+    document.getElementById("cartao").value    = h.cartao    || "";
+    document.getElementById("nome").value      = h.nome      || "";
+    document.getElementById("motivo").value    = h.motivo    || "";
+    document.getElementById("msg").style.display = "none";
+    mostrar("telaForm");
+  }
+
+  function voltarAbas()     { mostrar("telaAbas"); }
+  function voltarHorarios() { abrirAba(abaAtual); }
+
+  function showMsg(texto, tipo) {
+    const el = document.getElementById("msg");
+    el.textContent = texto;
+    el.className = "msg " + tipo;
+    el.style.display = "block";
+    if (tipo === "ok") setTimeout(voltarHorarios, 1500);
+  }
+
+  function validar() {
+    const faltando = [
+      ["equipe","Equipe"], ["microarea","Microárea"], ["famRua","CPF"],
+      ["cartao","Cartão Municipal"], ["nome","Nome"], ["motivo","Motivo"]
+    ].filter(([id]) => !document.getElementById(id).value.trim()).map(([,l]) => l);
+    if (faltando.length) { showMsg("⚠️ Preencha: " + faltando.join(", "), "err"); return false; }
+    return true;
+  }
+
+  async function salvar() {
+    if (!validar()) return;
+    try {
+      const r = await apiPost({
+        acao: "salvar", nomeAba: abaAtual, row: rowAtual,
+        equipe:    document.getElementById("equipe").value.trim(),
+        microarea: document.getElementById("microarea").value.trim(),
+        famRua:    document.getElementById("famRua").value.trim(),
+        cartao:    document.getElementById("cartao").value.trim(),
+        nome:      document.getElementById("nome").value.trim(),
+        motivo:    document.getElementById("motivo").value.trim()
+      });
+      showMsg(r.ok ? "✅ Agendado!" : r.msg, r.ok ? "ok" : "err");
+    } catch(e) {
+      showMsg("Erro: " + e.message, "err");
+    }
+  }
+
+  async function limpar() {
+    if (!confirm("Deseja realmente limpar este horário?")) return;
+    try {
+      const r = await apiPost({ acao: "limpar", nomeAba: abaAtual, row: rowAtual });
+      if (r.ok) voltarHorarios();
+    } catch(e) {
+      showMsg("Erro: " + e.message, "err");
+    }
+  }
+
+  carregarAbas();
+</script>
+</body>
+</html>
